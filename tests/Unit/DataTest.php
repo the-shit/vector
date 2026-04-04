@@ -58,6 +58,38 @@ describe('ScoredPoint', function (): void {
             ->and($point->vector)->toBeNull()
             ->and($point->version)->toBeNull();
     });
+
+    it('normalizes JSON-encoded arrays in payload', function (): void {
+        $point = ScoredPoint::fromArray([
+            'id' => 1,
+            'score' => 0.9,
+            'payload' => ['tags' => '["rock","punk"]', 'title' => 'Test'],
+        ]);
+
+        expect($point->payload['tags'])->toBe(['rock', 'punk'])
+            ->and($point->payload['title'])->toBe('Test');
+    });
+
+    it('leaves normal arrays untouched', function (): void {
+        $point = ScoredPoint::fromArray([
+            'id' => 1,
+            'score' => 0.9,
+            'payload' => ['tags' => ['rock', 'punk']],
+        ]);
+
+        expect($point->payload['tags'])->toBe(['rock', 'punk']);
+    });
+
+    it('does not decode non-array JSON strings', function (): void {
+        $point = ScoredPoint::fromArray([
+            'id' => 1,
+            'score' => 0.9,
+            'payload' => ['name' => 'just a string', 'bracket' => '[not json'],
+        ]);
+
+        expect($point->payload['name'])->toBe('just a string')
+            ->and($point->payload['bracket'])->toBe('[not json');
+    });
 });
 
 describe('CollectionInfo', function (): void {
@@ -143,5 +175,15 @@ describe('ScrollResult', function (): void {
 
         expect($result->points)->toBe([])
             ->and($result->nextOffset)->toBeNull();
+    });
+
+    it('normalizes JSON-encoded arrays in scroll payloads', function (): void {
+        $result = ScrollResult::fromArray([
+            'points' => [
+                ['id' => 1, 'payload' => ['genres' => '["electronic","ambient"]']],
+            ],
+        ]);
+
+        expect($result->points[0]->payload['genres'])->toBe(['electronic', 'ambient']);
     });
 });

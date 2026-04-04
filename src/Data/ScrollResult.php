@@ -23,7 +23,7 @@ final readonly class ScrollResult
             fn (array $p): ScoredPoint => new ScoredPoint(
                 id: $p['id'],
                 score: 0.0,
-                payload: $p['payload'] ?? [],
+                payload: ScoredPoint::normalizePayload($p['payload'] ?? []),
                 vector: $p['vector'] ?? null,
             ),
             $data['points'] ?? [],
