@@ -18,6 +18,12 @@ interface VectorClient
     public function getCollection(string $name): CollectionInfo;
 
     /**
+     * @param  array<string|int>  $ids
+     * @return array<ScoredPoint>
+     */
+    public function getPoints(string $collection, array $ids): array;
+
+    /**
      * @param  array<int, array{id: string|int, vector: array<float>, payload?: array<string, mixed>}>  $points
      */
     public function upsert(string $collection, array $points, bool $wait = true): UpsertResult;

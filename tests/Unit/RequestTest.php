@@ -6,6 +6,7 @@ use TheShit\Vector\Requests\Collections\CreateCollectionRequest;
 use TheShit\Vector\Requests\Collections\DeleteCollectionRequest;
 use TheShit\Vector\Requests\Collections\GetCollectionRequest;
 use TheShit\Vector\Requests\Points\DeletePointsRequest;
+use TheShit\Vector\Requests\Points\GetPointsRequest;
 use TheShit\Vector\Requests\Points\ScrollPointsRequest;
 use TheShit\Vector\Requests\Points\SearchPointsRequest;
 use TheShit\Vector\Requests\Points\UpsertPointsRequest;
@@ -32,6 +33,32 @@ describe('CreateCollectionRequest', function (): void {
         $body = invade($request)->defaultBody();
 
         expect($body)->toBe(['vectors' => $named]);
+    });
+});
+
+describe('GetPointsRequest', function (): void {
+    it('resolves endpoint', function (): void {
+        $request = new GetPointsRequest('coll', [1, 2]);
+
+        expect($request->resolveEndpoint())->toBe('/collections/coll/points');
+    });
+
+    it('builds body with ids and defaults', function (): void {
+        $request = new GetPointsRequest('coll', ['uuid-1', 'uuid-2']);
+        $body = invade($request)->defaultBody();
+
+        expect($body)->toBe([
+            'ids' => ['uuid-1', 'uuid-2'],
+            'with_payload' => true,
+            'with_vector' => false,
+        ]);
+    });
+
+    it('respects withVector option', function (): void {
+        $request = new GetPointsRequest('coll', [1], withVector: true);
+        $body = invade($request)->defaultBody();
+
+        expect($body['with_vector'])->toBeTrue();
     });
 });
 

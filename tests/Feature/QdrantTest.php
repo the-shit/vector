@@ -15,6 +15,7 @@ use TheShit\Vector\Requests\Collections\CreateCollectionRequest;
 use TheShit\Vector\Requests\Collections\DeleteCollectionRequest;
 use TheShit\Vector\Requests\Collections\GetCollectionRequest;
 use TheShit\Vector\Requests\Points\DeletePointsRequest;
+use TheShit\Vector\Requests\Points\GetPointsRequest;
 use TheShit\Vector\Requests\Points\ScrollPointsRequest;
 use TheShit\Vector\Requests\Points\SearchPointsRequest;
 use TheShit\Vector\Requests\Points\UpsertPointsRequest;
@@ -77,6 +78,41 @@ describe('Qdrant::getCollection', function (): void {
         expect($info)->toBeInstanceOf(CollectionInfo::class)
             ->and($info->status)->toBe('green')
             ->and($info->pointsCount)->toBe(500);
+    });
+});
+
+describe('Qdrant::getPoints', function (): void {
+    it('returns points by ids', function (): void {
+        $mock = new MockClient([
+            GetPointsRequest::class => MockResponse::make([
+                'result' => [
+                    ['id' => 'abc', 'payload' => ['title' => 'First'], 'vector' => null],
+                    ['id' => 'def', 'payload' => ['title' => 'Second'], 'vector' => null],
+                ],
+                'status' => 'ok',
+            ]),
+        ]);
+
+        $results = makeClient($mock)->getPoints('coll', ['abc', 'def']);
+
+        expect($results)->toHaveCount(2)
+            ->and($results[0]->id)->toBe('abc')
+            ->and($results[0]->payload['title'])->toBe('First')
+            ->and($results[1]->id)->toBe('def');
+        $mock->assertSent(GetPointsRequest::class);
+    });
+
+    it('handles empty result', function (): void {
+        $mock = new MockClient([
+            GetPointsRequest::class => MockResponse::make([
+                'result' => [],
+                'status' => 'ok',
+            ]),
+        ]);
+
+        $results = makeClient($mock)->getPoints('coll', ['nonexistent']);
+
+        expect($results)->toBe([]);
     });
 });
 
