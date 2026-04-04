@@ -14,6 +14,7 @@ use TheShit\Vector\Requests\Collections\CreateCollectionRequest;
 use TheShit\Vector\Requests\Collections\DeleteCollectionRequest;
 use TheShit\Vector\Requests\Collections\GetCollectionRequest;
 use TheShit\Vector\Requests\Points\DeletePointsRequest;
+use TheShit\Vector\Requests\Points\GetPointsRequest;
 use TheShit\Vector\Requests\Points\ScrollPointsRequest;
 use TheShit\Vector\Requests\Points\SearchPointsRequest;
 use TheShit\Vector\Requests\Points\UpsertPointsRequest;
@@ -46,6 +47,26 @@ class Qdrant implements VectorClient
         $response->throw();
 
         return CollectionInfo::fromArray($response->json('result'));
+    }
+
+    /**
+     * @param  array<string|int>  $ids
+     * @return array<ScoredPoint>
+     */
+    public function getPoints(string $collection, array $ids): array
+    {
+        $response = $this->connector->send(new GetPointsRequest($collection, $ids));
+        $response->throw();
+
+        return array_map(
+            fn (array $p): ScoredPoint => new ScoredPoint(
+                id: $p['id'],
+                score: 0.0,
+                payload: $p['payload'] ?? [],
+                vector: $p['vector'] ?? null,
+            ),
+            $response->json('result') ?? [],
+        );
     }
 
     /**
