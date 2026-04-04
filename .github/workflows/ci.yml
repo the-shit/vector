@@ -23,7 +23,7 @@ jobs:
           coverage: pcov
 
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist
+        run: composer update --no-interaction --prefer-dist
 
       - name: Pint (code style)
         run: vendor/bin/pint --test
