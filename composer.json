@@ -1,0 +1,59 @@
+{
+    "name": "the-shit/vector",
+    "description": "Thin, composable Saloon connector for the Qdrant vector database",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["qdrant", "vector", "saloon", "laravel", "embeddings", "search"],
+    "authors": [
+        {
+            "name": "Jordan Partridge",
+            "email": "jordan@partridge.rocks"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "saloonphp/saloon": "^3.0"
+    },
+    "require-dev": {
+        "laravel/framework": "^11.0|^12.0",
+        "laravel/pint": "^1.0",
+        "nunomaduro/pao": "dev-main",
+        "orchestra/testbench": "^9.0|^10.0",
+        "pestphp/pest": "^4.0",
+        "pestphp/pest-plugin-arch": "^4.0",
+        "rector/rector": "^2.0",
+        "spatie/invade": "^2.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "TheShit\\Vector\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "TheShit\\Vector\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "TheShit\\Vector\\VectorServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        },
+        "audit": {
+            "ignore": [
+                "PKSA-xnj5-w74d-6wmz",
+                "PKSA-rnpm-45mg-w6ht",
+                "PKSA-5szq-gvrg-ttfq"
+            ]
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
