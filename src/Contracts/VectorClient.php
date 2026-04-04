@@ -47,6 +47,11 @@ interface VectorClient
     public function setPayload(string $collection, array $ids, array $payload, bool $wait = true): UpsertResult;
 
     /**
+     * @param  array<string, mixed>|null  $filter
+     */
+    public function count(string $collection, ?array $filter = null): int;
+
+    /**
      * @param  array<string|int>|null  $ids
      * @param  array<string, mixed>|null  $filter
      */

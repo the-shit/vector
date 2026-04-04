@@ -5,6 +5,7 @@ declare(strict_types=1);
 use TheShit\Vector\Requests\Collections\CreateCollectionRequest;
 use TheShit\Vector\Requests\Collections\DeleteCollectionRequest;
 use TheShit\Vector\Requests\Collections\GetCollectionRequest;
+use TheShit\Vector\Requests\Points\CountPointsRequest;
 use TheShit\Vector\Requests\Points\DeletePointsRequest;
 use TheShit\Vector\Requests\Points\GetPointsRequest;
 use TheShit\Vector\Requests\Points\ScrollPointsRequest;
@@ -85,6 +86,30 @@ describe('SetPayloadRequest', function (): void {
         $query = invade($request)->defaultQuery();
 
         expect($query['wait'])->toBe('false');
+    });
+});
+
+describe('CountPointsRequest', function (): void {
+    it('resolves endpoint', function (): void {
+        $request = new CountPointsRequest('coll');
+
+        expect($request->resolveEndpoint())->toBe('/collections/coll/points/count');
+    });
+
+    it('builds body with exact flag', function (): void {
+        $request = new CountPointsRequest('coll');
+        $body = invade($request)->defaultBody();
+
+        expect($body)->toBe(['exact' => true]);
+    });
+
+    it('includes filter when provided', function (): void {
+        $filter = ['must' => [['key' => 'type', 'match' => ['value' => 'track']]]];
+        $request = new CountPointsRequest('coll', $filter);
+        $body = invade($request)->defaultBody();
+
+        expect($body['filter'])->toBe($filter)
+            ->and($body['exact'])->toBeTrue();
     });
 });
 

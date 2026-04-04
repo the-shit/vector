@@ -14,6 +14,7 @@ use TheShit\Vector\QdrantConnector;
 use TheShit\Vector\Requests\Collections\CreateCollectionRequest;
 use TheShit\Vector\Requests\Collections\DeleteCollectionRequest;
 use TheShit\Vector\Requests\Collections\GetCollectionRequest;
+use TheShit\Vector\Requests\Points\CountPointsRequest;
 use TheShit\Vector\Requests\Points\DeletePointsRequest;
 use TheShit\Vector\Requests\Points\GetPointsRequest;
 use TheShit\Vector\Requests\Points\ScrollPointsRequest;
@@ -131,6 +132,36 @@ describe('Qdrant::setPayload', function (): void {
         expect($result)->toBeInstanceOf(UpsertResult::class)
             ->and($result->completed())->toBeTrue();
         $mock->assertSent(SetPayloadRequest::class);
+    });
+});
+
+describe('Qdrant::count', function (): void {
+    it('returns count as integer', function (): void {
+        $mock = new MockClient([
+            CountPointsRequest::class => MockResponse::make([
+                'result' => ['count' => 42],
+                'status' => 'ok',
+            ]),
+        ]);
+
+        $count = makeClient($mock)->count('coll');
+
+        expect($count)->toBe(42);
+        $mock->assertSent(CountPointsRequest::class);
+    });
+
+    it('passes filter through', function (): void {
+        $mock = new MockClient([
+            CountPointsRequest::class => MockResponse::make([
+                'result' => ['count' => 5],
+                'status' => 'ok',
+            ]),
+        ]);
+
+        $filter = ['must' => [['key' => 'type', 'match' => ['value' => 'track']]]];
+        $count = makeClient($mock)->count('coll', $filter);
+
+        expect($count)->toBe(5);
     });
 });
 
