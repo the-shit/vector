@@ -18,6 +18,7 @@ use TheShit\Vector\Requests\Points\DeletePointsRequest;
 use TheShit\Vector\Requests\Points\GetPointsRequest;
 use TheShit\Vector\Requests\Points\ScrollPointsRequest;
 use TheShit\Vector\Requests\Points\SearchPointsRequest;
+use TheShit\Vector\Requests\Points\SetPayloadRequest;
 use TheShit\Vector\Requests\Points\UpsertPointsRequest;
 
 function makeClient(MockClient $mock): Qdrant
@@ -113,6 +114,23 @@ describe('Qdrant::getPoints', function (): void {
         $results = makeClient($mock)->getPoints('coll', ['nonexistent']);
 
         expect($results)->toBe([]);
+    });
+});
+
+describe('Qdrant::setPayload', function (): void {
+    it('updates payload and returns result', function (): void {
+        $mock = new MockClient([
+            SetPayloadRequest::class => MockResponse::make([
+                'result' => ['status' => 'completed', 'operation_id' => 10],
+                'status' => 'ok',
+            ]),
+        ]);
+
+        $result = makeClient($mock)->setPayload('coll', ['abc'], ['play_count' => 5]);
+
+        expect($result)->toBeInstanceOf(UpsertResult::class)
+            ->and($result->completed())->toBeTrue();
+        $mock->assertSent(SetPayloadRequest::class);
     });
 });
 
