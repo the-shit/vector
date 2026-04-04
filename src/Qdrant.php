@@ -13,6 +13,7 @@ use TheShit\Vector\Data\UpsertResult;
 use TheShit\Vector\Requests\Collections\CreateCollectionRequest;
 use TheShit\Vector\Requests\Collections\DeleteCollectionRequest;
 use TheShit\Vector\Requests\Collections\GetCollectionRequest;
+use TheShit\Vector\Requests\Points\CountPointsRequest;
 use TheShit\Vector\Requests\Points\DeletePointsRequest;
 use TheShit\Vector\Requests\Points\GetPointsRequest;
 use TheShit\Vector\Requests\Points\ScrollPointsRequest;
@@ -123,6 +124,17 @@ class Qdrant implements VectorClient
         $response->throw();
 
         return UpsertResult::fromArray($response->json('result'));
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $filter
+     */
+    public function count(string $collection, ?array $filter = null): int
+    {
+        $response = $this->connector->send(new CountPointsRequest($collection, $filter));
+        $response->throw();
+
+        return (int) $response->json('result.count');
     }
 
     /**
