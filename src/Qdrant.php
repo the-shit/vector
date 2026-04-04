@@ -75,7 +75,7 @@ class Qdrant implements VectorClient
         $response->throw();
 
         return array_map(
-            fn (array $p): \TheShit\Vector\Data\ScoredPoint => ScoredPoint::fromArray($p),
+            fn (array $p): ScoredPoint => ScoredPoint::fromArray($p),
             $response->json('result') ?? [],
         );
     }

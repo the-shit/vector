@@ -13,14 +13,14 @@ class VectorServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../config/vector.php', 'vector');
 
-        $this->app->singleton(QdrantConnector::class, function (): \TheShit\Vector\QdrantConnector {
+        $this->app->singleton(QdrantConnector::class, function (): QdrantConnector {
             return new QdrantConnector(
                 baseUrl: config('vector.url', 'http://localhost:6333'),
                 apiKey: config('vector.api_key'),
             );
         });
 
-        $this->app->singleton(Qdrant::class, function ($app): \TheShit\Vector\Qdrant {
+        $this->app->singleton(Qdrant::class, function ($app): Qdrant {
             return new Qdrant($app->make(QdrantConnector::class));
         });
 

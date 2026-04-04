@@ -26,9 +26,27 @@ final readonly class ScoredPoint
         return new self(
             id: $data['id'],
             score: (float) $data['score'],
-            payload: $data['payload'] ?? [],
+            payload: self::normalizePayload($data['payload'] ?? []),
             vector: $data['vector'] ?? null,
             version: $data['version'] ?? null,
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public static function normalizePayload(array $payload): array
+    {
+        return array_map(function (mixed $value): mixed {
+            if (is_string($value) && str_starts_with($value, '[') && str_ends_with($value, ']')) {
+                $decoded = json_decode($value, true);
+                if (is_array($decoded)) {
+                    return $decoded;
+                }
+            }
+
+            return $value;
+        }, $payload);
     }
 }
