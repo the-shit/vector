@@ -25,6 +25,9 @@ jobs:
       - name: Install dependencies
         run: composer update --no-interaction --prefer-dist
 
+      - name: Fetch latest Qdrant OpenAPI spec
+        run: composer run fetch-spec
+
       - name: Pint (code style)
         run: vendor/bin/pint --test
 
