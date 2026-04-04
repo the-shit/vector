@@ -20,7 +20,7 @@ final readonly class ScrollResult
     public static function fromArray(array $data): self
     {
         $points = array_map(
-            fn (array $p): \TheShit\Vector\Data\ScoredPoint => new ScoredPoint(
+            fn (array $p): ScoredPoint => new ScoredPoint(
                 id: $p['id'],
                 score: 0.0,
                 payload: $p['payload'] ?? [],
