@@ -17,6 +17,7 @@ use TheShit\Vector\Requests\Points\DeletePointsRequest;
 use TheShit\Vector\Requests\Points\GetPointsRequest;
 use TheShit\Vector\Requests\Points\ScrollPointsRequest;
 use TheShit\Vector\Requests\Points\SearchPointsRequest;
+use TheShit\Vector\Requests\Points\SetPayloadRequest;
 use TheShit\Vector\Requests\Points\UpsertPointsRequest;
 
 class Qdrant implements VectorClient
@@ -110,6 +111,18 @@ class Qdrant implements VectorClient
         $response->throw();
 
         return ScrollResult::fromArray($response->json('result'));
+    }
+
+    /**
+     * @param  array<string|int>  $ids
+     * @param  array<string, mixed>  $payload
+     */
+    public function setPayload(string $collection, array $ids, array $payload, bool $wait = true): UpsertResult
+    {
+        $response = $this->connector->send(new SetPayloadRequest($collection, $ids, $payload, $wait));
+        $response->throw();
+
+        return UpsertResult::fromArray($response->json('result'));
     }
 
     /**

@@ -9,6 +9,7 @@ use TheShit\Vector\Requests\Points\DeletePointsRequest;
 use TheShit\Vector\Requests\Points\GetPointsRequest;
 use TheShit\Vector\Requests\Points\ScrollPointsRequest;
 use TheShit\Vector\Requests\Points\SearchPointsRequest;
+use TheShit\Vector\Requests\Points\SetPayloadRequest;
 use TheShit\Vector\Requests\Points\UpsertPointsRequest;
 
 describe('CreateCollectionRequest', function (): void {
@@ -59,6 +60,31 @@ describe('GetPointsRequest', function (): void {
         $body = invade($request)->defaultBody();
 
         expect($body['with_vector'])->toBeTrue();
+    });
+});
+
+describe('SetPayloadRequest', function (): void {
+    it('resolves endpoint', function (): void {
+        $request = new SetPayloadRequest('coll', [1], ['key' => 'val']);
+
+        expect($request->resolveEndpoint())->toBe('/collections/coll/points/payload');
+    });
+
+    it('builds body with payload and points', function (): void {
+        $request = new SetPayloadRequest('coll', ['a', 'b'], ['status' => 'verified']);
+        $body = invade($request)->defaultBody();
+
+        expect($body)->toBe([
+            'payload' => ['status' => 'verified'],
+            'points' => ['a', 'b'],
+        ]);
+    });
+
+    it('sets wait query param', function (): void {
+        $request = new SetPayloadRequest('coll', [1], ['k' => 'v'], wait: false);
+        $query = invade($request)->defaultQuery();
+
+        expect($query['wait'])->toBe('false');
     });
 });
 

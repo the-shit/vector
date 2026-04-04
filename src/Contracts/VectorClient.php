@@ -41,6 +41,12 @@ interface VectorClient
     public function scroll(string $collection, int $limit = 100, ?array $filter = null, string|int|null $offset = null): ScrollResult;
 
     /**
+     * @param  array<string|int>  $ids
+     * @param  array<string, mixed>  $payload
+     */
+    public function setPayload(string $collection, array $ids, array $payload, bool $wait = true): UpsertResult;
+
+    /**
      * @param  array<string|int>|null  $ids
      * @param  array<string, mixed>|null  $filter
      */
