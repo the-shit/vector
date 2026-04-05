@@ -51,6 +51,10 @@ interface VectorClient
      */
     public function count(string $collection, ?array $filter = null): int;
 
+    public function createPayloadIndex(string $collection, string $fieldName, ?string $fieldSchema = null): UpsertResult;
+
+    public function deletePayloadIndex(string $collection, string $fieldName): UpsertResult;
+
     /**
      * @param  array<string|int>|null  $ids
      * @param  array<string, mixed>|null  $filter

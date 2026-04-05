@@ -6,6 +6,8 @@ use TheShit\Vector\Requests\Collections\CreateCollectionRequest;
 use TheShit\Vector\Requests\Collections\DeleteCollectionRequest;
 use TheShit\Vector\Requests\Collections\GetCollectionRequest;
 use TheShit\Vector\Requests\Points\CountPointsRequest;
+use TheShit\Vector\Requests\Points\CreatePayloadIndexRequest;
+use TheShit\Vector\Requests\Points\DeletePayloadIndexRequest;
 use TheShit\Vector\Requests\Points\DeletePointsRequest;
 use TheShit\Vector\Requests\Points\GetPointsRequest;
 use TheShit\Vector\Requests\Points\ScrollPointsRequest;
@@ -110,6 +112,50 @@ describe('CountPointsRequest', function (): void {
 
         expect($body['filter'])->toBe($filter)
             ->and($body['exact'])->toBeTrue();
+    });
+});
+
+describe('CreatePayloadIndexRequest', function (): void {
+    it('resolves endpoint', function (): void {
+        $request = new CreatePayloadIndexRequest('coll', 'artist');
+
+        expect($request->resolveEndpoint())->toBe('/collections/coll/index');
+    });
+
+    it('builds body with field name only', function (): void {
+        $request = new CreatePayloadIndexRequest('coll', 'artist');
+        $body = invade($request)->defaultBody();
+
+        expect($body)->toBe(['field_name' => 'artist']);
+    });
+
+    it('includes field schema when provided', function (): void {
+        $request = new CreatePayloadIndexRequest('coll', 'artist', 'keyword');
+        $body = invade($request)->defaultBody();
+
+        expect($body)->toBe(['field_name' => 'artist', 'field_schema' => 'keyword']);
+    });
+
+    it('sets wait query param', function (): void {
+        $request = new CreatePayloadIndexRequest('coll', 'artist', wait: false);
+        $query = invade($request)->defaultQuery();
+
+        expect($query['wait'])->toBe('false');
+    });
+});
+
+describe('DeletePayloadIndexRequest', function (): void {
+    it('resolves endpoint with field name', function (): void {
+        $request = new DeletePayloadIndexRequest('coll', 'artist');
+
+        expect($request->resolveEndpoint())->toBe('/collections/coll/index/artist');
+    });
+
+    it('sets wait query param', function (): void {
+        $request = new DeletePayloadIndexRequest('coll', 'artist', wait: true);
+        $query = invade($request)->defaultQuery();
+
+        expect($query['wait'])->toBe('true');
     });
 });
 

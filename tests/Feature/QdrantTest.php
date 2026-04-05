@@ -15,6 +15,8 @@ use TheShit\Vector\Requests\Collections\CreateCollectionRequest;
 use TheShit\Vector\Requests\Collections\DeleteCollectionRequest;
 use TheShit\Vector\Requests\Collections\GetCollectionRequest;
 use TheShit\Vector\Requests\Points\CountPointsRequest;
+use TheShit\Vector\Requests\Points\CreatePayloadIndexRequest;
+use TheShit\Vector\Requests\Points\DeletePayloadIndexRequest;
 use TheShit\Vector\Requests\Points\DeletePointsRequest;
 use TheShit\Vector\Requests\Points\GetPointsRequest;
 use TheShit\Vector\Requests\Points\ScrollPointsRequest;
@@ -162,6 +164,40 @@ describe('Qdrant::count', function (): void {
         $count = makeClient($mock)->count('coll', $filter);
 
         expect($count)->toBe(5);
+    });
+});
+
+describe('Qdrant::createPayloadIndex', function (): void {
+    it('creates an index and returns result', function (): void {
+        $mock = new MockClient([
+            CreatePayloadIndexRequest::class => MockResponse::make([
+                'result' => ['status' => 'completed', 'operation_id' => 20],
+                'status' => 'ok',
+            ]),
+        ]);
+
+        $result = makeClient($mock)->createPayloadIndex('coll', 'artist', 'keyword');
+
+        expect($result)->toBeInstanceOf(UpsertResult::class)
+            ->and($result->completed())->toBeTrue();
+        $mock->assertSent(CreatePayloadIndexRequest::class);
+    });
+});
+
+describe('Qdrant::deletePayloadIndex', function (): void {
+    it('deletes an index and returns result', function (): void {
+        $mock = new MockClient([
+            DeletePayloadIndexRequest::class => MockResponse::make([
+                'result' => ['status' => 'completed', 'operation_id' => 21],
+                'status' => 'ok',
+            ]),
+        ]);
+
+        $result = makeClient($mock)->deletePayloadIndex('coll', 'artist');
+
+        expect($result)->toBeInstanceOf(UpsertResult::class)
+            ->and($result->completed())->toBeTrue();
+        $mock->assertSent(DeletePayloadIndexRequest::class);
     });
 });
 
