@@ -14,6 +14,8 @@ use TheShit\Vector\Requests\Collections\CreateCollectionRequest;
 use TheShit\Vector\Requests\Collections\DeleteCollectionRequest;
 use TheShit\Vector\Requests\Collections\GetCollectionRequest;
 use TheShit\Vector\Requests\Points\CountPointsRequest;
+use TheShit\Vector\Requests\Points\CreatePayloadIndexRequest;
+use TheShit\Vector\Requests\Points\DeletePayloadIndexRequest;
 use TheShit\Vector\Requests\Points\DeletePointsRequest;
 use TheShit\Vector\Requests\Points\GetPointsRequest;
 use TheShit\Vector\Requests\Points\ScrollPointsRequest;
@@ -135,6 +137,22 @@ class Qdrant implements VectorClient
         $response->throw();
 
         return (int) $response->json('result.count');
+    }
+
+    public function createPayloadIndex(string $collection, string $fieldName, ?string $fieldSchema = null): UpsertResult
+    {
+        $response = $this->connector->send(new CreatePayloadIndexRequest($collection, $fieldName, $fieldSchema));
+        $response->throw();
+
+        return UpsertResult::fromArray($response->json('result'));
+    }
+
+    public function deletePayloadIndex(string $collection, string $fieldName): UpsertResult
+    {
+        $response = $this->connector->send(new DeletePayloadIndexRequest($collection, $fieldName));
+        $response->throw();
+
+        return UpsertResult::fromArray($response->json('result'));
     }
 
     /**

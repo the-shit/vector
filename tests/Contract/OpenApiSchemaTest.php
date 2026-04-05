@@ -95,6 +95,13 @@ describe('Contract: Request bodies match Qdrant OpenAPI spec', function (): void
             ->and($fields)->toContain('exact');
     });
 
+    it('CreateFieldIndex requires field_name', function (): void {
+        $schema = getRequestSchema(loadSpec(), 'put', '/collections/{collection_name}/index');
+
+        expect(specFields($schema))->toContain('field_name')
+            ->and(specRequired($schema))->toContain('field_name');
+    });
+
     it('SetPayload requires payload field', function (): void {
         $schema = getRequestSchema(loadSpec(), 'post', '/collections/{collection_name}/points/payload');
 
@@ -152,7 +159,8 @@ describe('Contract: Endpoints exist in Qdrant spec', function (): void {
             ->and($paths)->toContain('/collections/{collection_name}/points/scroll')
             ->and($paths)->toContain('/collections/{collection_name}/points/delete')
             ->and($paths)->toContain('/collections/{collection_name}/points/count')
-            ->and($paths)->toContain('/collections/{collection_name}/points/payload');
+            ->and($paths)->toContain('/collections/{collection_name}/points/payload')
+            ->and($paths)->toContain('/collections/{collection_name}/index');
     });
 
     it('our HTTP methods match', function (): void {
@@ -167,6 +175,8 @@ describe('Contract: Endpoints exist in Qdrant spec', function (): void {
             ->and($spec['paths']['/collections/{collection_name}/points/scroll'])->toHaveKey('post')
             ->and($spec['paths']['/collections/{collection_name}/points/delete'])->toHaveKey('post')
             ->and($spec['paths']['/collections/{collection_name}/points/count'])->toHaveKey('post')
-            ->and($spec['paths']['/collections/{collection_name}/points/payload'])->toHaveKey('post');
+            ->and($spec['paths']['/collections/{collection_name}/points/payload'])->toHaveKey('post')
+            ->and($spec['paths']['/collections/{collection_name}/index'])->toHaveKey('put')
+            ->and($spec['paths']['/collections/{collection_name}/index/{field_name}'])->toHaveKey('delete');
     });
 });
