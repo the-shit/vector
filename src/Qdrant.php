@@ -98,9 +98,9 @@ class Qdrant implements VectorClient
      * @param  array<string, mixed>|null  $filter
      * @return array<ScoredPoint>
      */
-    public function search(string $collection, array $vector, int $limit = 10, ?array $filter = null): array
+    public function search(string $collection, array $vector, int $limit = 10, ?array $filter = null, ?float $scoreThreshold = null): array
     {
-        $response = $this->connector->send(new SearchPointsRequest($collection, $vector, $limit, $filter));
+        $response = $this->connector->send(new SearchPointsRequest($collection, $vector, $limit, $filter, scoreThreshold: $scoreThreshold));
         $response->throw();
 
         return array_map(
