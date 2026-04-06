@@ -21,6 +21,11 @@ interface VectorClient
     public function getCollection(string $name): CollectionInfo;
 
     /**
+     * @return array<int, string>
+     */
+    public function listCollections(): array;
+
+    /**
      * @param  array<string|int>  $ids
      * @return array<ScoredPoint>
      */
