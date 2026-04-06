@@ -6,6 +6,7 @@ use TheShit\Vector\Requests\Collections\AliasRequest;
 use TheShit\Vector\Requests\Collections\CreateCollectionRequest;
 use TheShit\Vector\Requests\Collections\DeleteCollectionRequest;
 use TheShit\Vector\Requests\Collections\GetCollectionRequest;
+use TheShit\Vector\Requests\Collections\ListCollectionsRequest;
 use TheShit\Vector\Requests\Points\CountPointsRequest;
 use TheShit\Vector\Requests\Points\CreatePayloadIndexRequest;
 use TheShit\Vector\Requests\Points\DeletePayloadIndexRequest;
@@ -468,5 +469,13 @@ describe('AliasRequest', function (): void {
                 ['create_alias' => ['collection_name' => 'memories_v2', 'alias_name' => 'memories']],
             ],
         ]);
+    });
+});
+
+describe('ListCollectionsRequest', function (): void {
+    it('resolves endpoint', function (): void {
+        $request = new ListCollectionsRequest;
+
+        expect($request->resolveEndpoint())->toBe('/collections');
     });
 });
