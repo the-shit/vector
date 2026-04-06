@@ -31,6 +31,19 @@ class Qdrant implements VectorClient
         protected readonly QdrantConnector $connector,
     ) {}
 
+    public static function collection(string $name): QueryBuilder
+    {
+        /** @var VectorClient $client */
+        $client = app(VectorClient::class);
+
+        return new QueryBuilder($client, $name);
+    }
+
+    public function query(string $collection): QueryBuilder
+    {
+        return new QueryBuilder($this, $collection);
+    }
+
     /**
      * @param  array<string, array<string, mixed>>|null  $sparseVectors
      */
