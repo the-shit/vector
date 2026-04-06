@@ -60,4 +60,10 @@ interface VectorClient
      * @param  array<string, mixed>|null  $filter
      */
     public function delete(string $collection, ?array $ids = null, ?array $filter = null, bool $wait = true): UpsertResult;
+
+    /**
+     * @param  callable(ScrollResult): void  $callback
+     * @param  array<string, mixed>|null  $filter
+     */
+    public function scrollAll(string $collection, callable $callback, int $chunkSize = 100, ?array $filter = null): void;
 }
