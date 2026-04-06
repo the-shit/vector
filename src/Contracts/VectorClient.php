@@ -85,4 +85,13 @@ interface VectorClient
      * @param  array<string, mixed>|null  $filter
      */
     public function scrollAll(string $collection, callable $callback, int $chunkSize = 100, ?array $filter = null): void;
+
+    public function assignAlias(string $collectionName, string $aliasName): bool;
+
+    public function deleteAlias(string $aliasName): bool;
+
+    /**
+     * @param  array<int, array{assign?: array{collection_name: string, alias_name: string}, delete?: array{alias_name: string}}>  $actions
+     */
+    public function aliasActions(array $actions): bool;
 }

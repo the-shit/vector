@@ -182,7 +182,8 @@ describe('Contract: Endpoints exist in Qdrant spec', function (): void {
             ->and($paths)->toContain('/collections/{collection_name}/points/count')
             ->and($paths)->toContain('/collections/{collection_name}/points/payload')
             ->and($paths)->toContain('/collections/{collection_name}/index')
-            ->and($paths)->toContain('/collections/{collection_name}/points/query');
+            ->and($paths)->toContain('/collections/{collection_name}/points/query')
+            ->and($paths)->toContain('/collections/aliases');
     });
 
     it('our HTTP methods match', function (): void {
@@ -200,6 +201,17 @@ describe('Contract: Endpoints exist in Qdrant spec', function (): void {
             ->and($spec['paths']['/collections/{collection_name}/points/payload'])->toHaveKey('post')
             ->and($spec['paths']['/collections/{collection_name}/index'])->toHaveKey('put')
             ->and($spec['paths']['/collections/{collection_name}/index/{field_name}'])->toHaveKey('delete')
-            ->and($spec['paths']['/collections/{collection_name}/points/query'])->toHaveKey('post');
+            ->and($spec['paths']['/collections/{collection_name}/points/query'])->toHaveKey('post')
+            ->and($spec['paths']['/collections/aliases'])->toHaveKey('post');
+    });
+});
+
+describe('Contract: Alias request matches Qdrant OpenAPI spec', function (): void {
+
+    it('ChangeAliasesRequest accepts actions array', function (): void {
+        $schema = getRequestSchema(loadSpec(), 'post', '/collections/aliases');
+
+        expect(specFields($schema))->toContain('actions')
+            ->and(specRequired($schema))->toContain('actions');
     });
 });
