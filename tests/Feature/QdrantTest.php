@@ -19,6 +19,7 @@ use TheShit\Vector\Requests\Points\CreatePayloadIndexRequest;
 use TheShit\Vector\Requests\Points\DeletePayloadIndexRequest;
 use TheShit\Vector\Requests\Points\DeletePointsRequest;
 use TheShit\Vector\Requests\Points\GetPointsRequest;
+use TheShit\Vector\Requests\Points\HybridSearchRequest;
 use TheShit\Vector\Requests\Points\ScrollPointsRequest;
 use TheShit\Vector\Requests\Points\SearchPointsRequest;
 use TheShit\Vector\Requests\Points\SetPayloadRequest;
@@ -456,6 +457,119 @@ describe('Qdrant::delete', function (): void {
         $result = makeClient($mock)->delete('coll', filter: $filter);
 
         expect($result->completed())->toBeTrue();
+    });
+});
+
+describe('Qdrant::hybridSearch', function (): void {
+    it('returns scored points from hybrid query', function (): void {
+        $mock = new MockClient([
+            HybridSearchRequest::class => MockResponse::make([
+                'result' => [
+                    'points' => [
+                        ['id' => 'a', 'score' => 0.92, 'payload' => ['title' => 'Hybrid Hit']],
+                        ['id' => 'b', 'score' => 0.85, 'payload' => ['title' => 'Second']],
+                    ],
+                ],
+                'status' => 'ok',
+            ]),
+        ]);
+
+        $results = makeClient($mock)->hybridSearch(
+            'coll',
+            [0.1, 0.2, 0.3],
+            ['indices' => [1, 5, 10], 'values' => [0.4, 0.6, 0.8]],
+            limit: 2,
+        );
+
+        expect($results)->toHaveCount(2)
+            ->and($results[0])->toBeInstanceOf(ScoredPoint::class)
+            ->and($results[0]->score)->toBe(0.92)
+            ->and($results[0]->payload['title'])->toBe('Hybrid Hit')
+            ->and($results[1]->id)->toBe('b');
+        $mock->assertSent(HybridSearchRequest::class);
+    });
+
+    it('passes filter to hybrid request', function (): void {
+        $mock = new MockClient([
+            HybridSearchRequest::class => MockResponse::make([
+                'result' => ['points' => []],
+                'status' => 'ok',
+            ]),
+        ]);
+
+        $filter = ['must' => [['key' => 'type', 'match' => ['value' => 'memory']]]];
+        makeClient($mock)->hybridSearch(
+            'coll',
+            [0.1],
+            ['indices' => [1], 'values' => [0.5]],
+            filter: $filter,
+        );
+
+        $mock->assertSent(function (HybridSearchRequest $request) use ($filter): bool {
+            $body = invade($request)->defaultBody();
+
+            return $body['filter'] === $filter;
+        });
+    });
+
+    it('handles empty results', function (): void {
+        $mock = new MockClient([
+            HybridSearchRequest::class => MockResponse::make([
+                'result' => ['points' => []],
+                'status' => 'ok',
+            ]),
+        ]);
+
+        $results = makeClient($mock)->hybridSearch(
+            'coll',
+            [0.1],
+            ['indices' => [1], 'values' => [0.5]],
+        );
+
+        expect($results)->toBe([]);
+    });
+
+    it('supports custom vector names', function (): void {
+        $mock = new MockClient([
+            HybridSearchRequest::class => MockResponse::make([
+                'result' => ['points' => []],
+                'status' => 'ok',
+            ]),
+        ]);
+
+        makeClient($mock)->hybridSearch(
+            'coll',
+            [0.1],
+            ['indices' => [1], 'values' => [0.5]],
+            denseVectorName: 'text-dense',
+            sparseVectorName: 'text-sparse',
+        );
+
+        $mock->assertSent(function (HybridSearchRequest $request): bool {
+            $body = invade($request)->defaultBody();
+
+            return $body['prefetch'][0]['using'] === 'text-dense'
+                && $body['prefetch'][1]['using'] === 'text-sparse';
+        });
+    });
+});
+
+describe('Qdrant::createCollection with sparse vectors', function (): void {
+    it('passes sparse vectors config', function (): void {
+        $mock = new MockClient([
+            CreateCollectionRequest::class => MockResponse::make(
+                ['result' => true, 'status' => 'ok', 'time' => 0.01],
+            ),
+        ]);
+
+        $result = makeClient($mock)->createCollection('test', 1536, sparseVectors: ['sparse' => ['modifier' => 'idf']]);
+
+        expect($result)->toBeTrue();
+        $mock->assertSent(function (CreateCollectionRequest $request): bool {
+            $body = invade($request)->defaultBody();
+
+            return isset($body['sparse_vectors']['sparse']);
+        });
     });
 });
 

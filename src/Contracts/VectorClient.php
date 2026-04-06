@@ -11,7 +11,10 @@ use TheShit\Vector\Data\UpsertResult;
 
 interface VectorClient
 {
-    public function createCollection(string $name, int $size, string $distance = 'Cosine'): bool;
+    /**
+     * @param  array<string, array<string, mixed>>|null  $sparseVectors
+     */
+    public function createCollection(string $name, int $size, string $distance = 'Cosine', ?array $sparseVectors = null): bool;
 
     public function deleteCollection(string $name): bool;
 
@@ -54,6 +57,22 @@ interface VectorClient
     public function createPayloadIndex(string $collection, string $fieldName, ?string $fieldSchema = null): UpsertResult;
 
     public function deletePayloadIndex(string $collection, string $fieldName): UpsertResult;
+
+    /**
+     * @param  array<float>  $denseVector
+     * @param  array{indices: array<int>, values: array<float>}  $sparseVector
+     * @param  array<string, mixed>|null  $filter
+     * @return array<ScoredPoint>
+     */
+    public function hybridSearch(
+        string $collection,
+        array $denseVector,
+        array $sparseVector,
+        string $denseVectorName = 'dense',
+        string $sparseVectorName = 'sparse',
+        int $limit = 10,
+        ?array $filter = null,
+    ): array;
 
     /**
      * @param  array<string|int>|null  $ids

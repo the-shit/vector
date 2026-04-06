@@ -10,6 +10,7 @@ use TheShit\Vector\Requests\Points\CreatePayloadIndexRequest;
 use TheShit\Vector\Requests\Points\DeletePayloadIndexRequest;
 use TheShit\Vector\Requests\Points\DeletePointsRequest;
 use TheShit\Vector\Requests\Points\GetPointsRequest;
+use TheShit\Vector\Requests\Points\HybridSearchRequest;
 use TheShit\Vector\Requests\Points\ScrollPointsRequest;
 use TheShit\Vector\Requests\Points\SearchPointsRequest;
 use TheShit\Vector\Requests\Points\SetPayloadRequest;
@@ -290,5 +291,132 @@ describe('DeletePointsRequest', function (): void {
         $query = invade($request)->defaultQuery();
 
         expect($query['wait'])->toBe('true');
+    });
+});
+
+describe('HybridSearchRequest', function (): void {
+    it('resolves endpoint', function (): void {
+        $request = new HybridSearchRequest(
+            'coll',
+            [0.1, 0.2],
+            ['indices' => [1, 3], 'values' => [0.5, 0.7]],
+        );
+
+        expect($request->resolveEndpoint())->toBe('/collections/coll/points/query');
+    });
+
+    it('builds body with prefetch and fusion', function (): void {
+        $request = new HybridSearchRequest(
+            'coll',
+            [0.1, 0.2],
+            ['indices' => [1, 3], 'values' => [0.5, 0.7]],
+            limit: 5,
+        );
+        $body = invade($request)->defaultBody();
+
+        expect($body['prefetch'])->toHaveCount(2)
+            ->and($body['prefetch'][0]['query'])->toBe([0.1, 0.2])
+            ->and($body['prefetch'][0]['using'])->toBe('dense')
+            ->and($body['prefetch'][0]['limit'])->toBe(5)
+            ->and($body['prefetch'][1]['query'])->toBe(['indices' => [1, 3], 'values' => [0.5, 0.7]])
+            ->and($body['prefetch'][1]['using'])->toBe('sparse')
+            ->and($body['prefetch'][1]['limit'])->toBe(5)
+            ->and($body['query'])->toBe(['fusion' => 'rrf'])
+            ->and($body['limit'])->toBe(5)
+            ->and($body['with_payload'])->toBeTrue()
+            ->and($body['with_vector'])->toBeFalse();
+    });
+
+    it('includes filter in prefetch and top-level when provided', function (): void {
+        $filter = ['must' => [['key' => 'type', 'match' => ['value' => 'track']]]];
+        $request = new HybridSearchRequest(
+            'coll',
+            [0.1],
+            ['indices' => [1], 'values' => [0.5]],
+            filter: $filter,
+        );
+        $body = invade($request)->defaultBody();
+
+        expect($body['filter'])->toBe($filter)
+            ->and($body['prefetch'][0]['filter'])->toBe($filter)
+            ->and($body['prefetch'][1]['filter'])->toBe($filter);
+    });
+
+    it('omits filter when null', function (): void {
+        $request = new HybridSearchRequest(
+            'coll',
+            [0.1],
+            ['indices' => [1], 'values' => [0.5]],
+        );
+        $body = invade($request)->defaultBody();
+
+        expect($body)->not->toHaveKey('filter')
+            ->and($body['prefetch'][0])->not->toHaveKey('filter')
+            ->and($body['prefetch'][1])->not->toHaveKey('filter');
+    });
+
+    it('supports custom vector names', function (): void {
+        $request = new HybridSearchRequest(
+            'coll',
+            [0.1],
+            ['indices' => [1], 'values' => [0.5]],
+            denseVectorName: 'text-dense',
+            sparseVectorName: 'text-sparse',
+        );
+        $body = invade($request)->defaultBody();
+
+        expect($body['prefetch'][0]['using'])->toBe('text-dense')
+            ->and($body['prefetch'][1]['using'])->toBe('text-sparse');
+    });
+
+    it('defaults to rrf fusion', function (): void {
+        $request = new HybridSearchRequest(
+            'coll',
+            [0.1],
+            ['indices' => [1], 'values' => [0.5]],
+        );
+        $body = invade($request)->defaultBody();
+
+        expect($body['query'])->toBe(['fusion' => 'rrf']);
+    });
+
+    it('supports dbsf fusion', function (): void {
+        $request = new HybridSearchRequest(
+            'coll',
+            [0.1],
+            ['indices' => [1], 'values' => [0.5]],
+            fusion: 'dbsf',
+        );
+        $body = invade($request)->defaultBody();
+
+        expect($body['query'])->toBe(['fusion' => 'dbsf']);
+    });
+});
+
+describe('CreateCollectionRequest with sparse vectors', function (): void {
+    it('includes sparse_vectors in body', function (): void {
+        $sparse = ['sparse' => ['modifier' => 'idf']];
+        $request = new CreateCollectionRequest('test', sparseVectors: $sparse);
+        $body = invade($request)->defaultBody();
+
+        expect($body['sparse_vectors'])->toBe($sparse)
+            ->and($body['vectors'])->toBe(['size' => 1536, 'distance' => 'Cosine']);
+    });
+
+    it('combines named vectors with sparse vectors', function (): void {
+        $named = ['dense' => ['size' => 768, 'distance' => 'Cosine']];
+        $sparse = ['sparse' => []];
+        $request = new CreateCollectionRequest('test', namedVectors: $named, sparseVectors: $sparse);
+        $body = invade($request)->defaultBody();
+
+        expect($body['vectors'])->toBe($named)
+            ->and($body['sparse_vectors'])->toBe($sparse);
+    });
+
+    it('omits sparse_vectors when null', function (): void {
+        $request = new CreateCollectionRequest('test');
+        $body = invade($request)->defaultBody();
+
+        expect($body)->not->toHaveKey('sparse_vectors');
     });
 });
