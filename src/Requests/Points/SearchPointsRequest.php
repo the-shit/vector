@@ -26,6 +26,7 @@ class SearchPointsRequest extends Request implements HasBody
         protected readonly ?array $filter = null,
         protected readonly bool $withPayload = true,
         protected readonly bool $withVector = false,
+        protected readonly ?float $scoreThreshold = null,
     ) {}
 
     public function resolveEndpoint(): string
@@ -44,6 +45,7 @@ class SearchPointsRequest extends Request implements HasBody
             'with_payload' => $this->withPayload,
             'with_vector' => $this->withVector,
             'filter' => $this->filter,
-        ], fn (int|bool|array|null $v): bool => $v !== null);
+            'score_threshold' => $this->scoreThreshold,
+        ], fn (int|bool|array|float|null $v): bool => $v !== null);
     }
 }
