@@ -36,7 +36,7 @@ interface VectorClient
      * @param  array<string, mixed>|null  $filter
      * @return array<ScoredPoint>
      */
-    public function search(string $collection, array $vector, int $limit = 10, ?array $filter = null): array;
+    public function search(string $collection, array $vector, int $limit = 10, ?array $filter = null, ?float $scoreThreshold = null): array;
 
     /**
      * @param  array<string, mixed>|null  $filter
