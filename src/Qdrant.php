@@ -10,6 +10,7 @@ use TheShit\Vector\Data\Point;
 use TheShit\Vector\Data\ScoredPoint;
 use TheShit\Vector\Data\ScrollResult;
 use TheShit\Vector\Data\UpsertResult;
+use TheShit\Vector\Requests\Collections\AliasRequest;
 use TheShit\Vector\Requests\Collections\CreateCollectionRequest;
 use TheShit\Vector\Requests\Collections\DeleteCollectionRequest;
 use TheShit\Vector\Requests\Collections\GetCollectionRequest;
@@ -218,6 +219,31 @@ class Qdrant implements VectorClient
 
             $offset = $result->nextOffset;
         } while ($result->hasMore());
+    }
+
+    public function assignAlias(string $collectionName, string $aliasName): bool
+    {
+        return $this->aliasActions([
+            ['assign' => ['collection_name' => $collectionName, 'alias_name' => $aliasName]],
+        ]);
+    }
+
+    public function deleteAlias(string $aliasName): bool
+    {
+        return $this->aliasActions([
+            ['delete' => ['alias_name' => $aliasName]],
+        ]);
+    }
+
+    /**
+     * @param  array<int, array{assign?: array{collection_name: string, alias_name: string}, delete?: array{alias_name: string}}>  $actions
+     */
+    public function aliasActions(array $actions): bool
+    {
+        $response = $this->connector->send(new AliasRequest($actions));
+        $response->throw();
+
+        return $response->json('result') === true;
     }
 
     public function connector(): QdrantConnector

@@ -11,6 +11,7 @@ use TheShit\Vector\Data\ScrollResult;
 use TheShit\Vector\Data\UpsertResult;
 use TheShit\Vector\Qdrant;
 use TheShit\Vector\QdrantConnector;
+use TheShit\Vector\Requests\Collections\AliasRequest;
 use TheShit\Vector\Requests\Collections\CreateCollectionRequest;
 use TheShit\Vector\Requests\Collections\DeleteCollectionRequest;
 use TheShit\Vector\Requests\Collections\GetCollectionRequest;
@@ -569,6 +570,79 @@ describe('Qdrant::createCollection with sparse vectors', function (): void {
             $body = invade($request)->defaultBody();
 
             return isset($body['sparse_vectors']['sparse']);
+        });
+    });
+});
+
+describe('Qdrant::assignAlias', function (): void {
+    it('assigns an alias to a collection', function (): void {
+        $mock = new MockClient([
+            AliasRequest::class => MockResponse::make(
+                ['result' => true, 'status' => 'ok', 'time' => 0.01],
+            ),
+        ]);
+
+        $result = makeClient($mock)->assignAlias('memories_v2', 'memories');
+
+        expect($result)->toBeTrue();
+        $mock->assertSent(function (AliasRequest $request): bool {
+            $body = invade($request)->defaultBody();
+
+            return $body === [
+                'actions' => [
+                    ['create_alias' => ['collection_name' => 'memories_v2', 'alias_name' => 'memories']],
+                ],
+            ];
+        });
+    });
+});
+
+describe('Qdrant::deleteAlias', function (): void {
+    it('deletes an alias', function (): void {
+        $mock = new MockClient([
+            AliasRequest::class => MockResponse::make(
+                ['result' => true, 'status' => 'ok', 'time' => 0.01],
+            ),
+        ]);
+
+        $result = makeClient($mock)->deleteAlias('old_alias');
+
+        expect($result)->toBeTrue();
+        $mock->assertSent(function (AliasRequest $request): bool {
+            $body = invade($request)->defaultBody();
+
+            return $body === [
+                'actions' => [
+                    ['delete_alias' => ['alias_name' => 'old_alias']],
+                ],
+            ];
+        });
+    });
+});
+
+describe('Qdrant::aliasActions', function (): void {
+    it('performs atomic alias swap for zero-downtime reindex', function (): void {
+        $mock = new MockClient([
+            AliasRequest::class => MockResponse::make(
+                ['result' => true, 'status' => 'ok', 'time' => 0.01],
+            ),
+        ]);
+
+        $result = makeClient($mock)->aliasActions([
+            ['delete' => ['alias_name' => 'memories']],
+            ['assign' => ['collection_name' => 'memories_v2', 'alias_name' => 'memories']],
+        ]);
+
+        expect($result)->toBeTrue();
+        $mock->assertSent(function (AliasRequest $request): bool {
+            $body = invade($request)->defaultBody();
+
+            return $body === [
+                'actions' => [
+                    ['delete_alias' => ['alias_name' => 'memories']],
+                    ['create_alias' => ['collection_name' => 'memories_v2', 'alias_name' => 'memories']],
+                ],
+            ];
         });
     });
 });

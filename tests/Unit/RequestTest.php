@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use TheShit\Vector\Requests\Collections\AliasRequest;
 use TheShit\Vector\Requests\Collections\CreateCollectionRequest;
 use TheShit\Vector\Requests\Collections\DeleteCollectionRequest;
 use TheShit\Vector\Requests\Collections\GetCollectionRequest;
@@ -418,5 +419,54 @@ describe('CreateCollectionRequest with sparse vectors', function (): void {
         $body = invade($request)->defaultBody();
 
         expect($body)->not->toHaveKey('sparse_vectors');
+    });
+});
+
+describe('AliasRequest', function (): void {
+    it('resolves endpoint', function (): void {
+        $request = new AliasRequest([]);
+
+        expect($request->resolveEndpoint())->toBe('/collections/aliases');
+    });
+
+    it('builds body with assign action', function (): void {
+        $request = new AliasRequest([
+            ['assign' => ['collection_name' => 'memories_v2', 'alias_name' => 'memories']],
+        ]);
+        $body = invade($request)->defaultBody();
+
+        expect($body)->toBe([
+            'actions' => [
+                ['create_alias' => ['collection_name' => 'memories_v2', 'alias_name' => 'memories']],
+            ],
+        ]);
+    });
+
+    it('builds body with delete action', function (): void {
+        $request = new AliasRequest([
+            ['delete' => ['alias_name' => 'old_alias']],
+        ]);
+        $body = invade($request)->defaultBody();
+
+        expect($body)->toBe([
+            'actions' => [
+                ['delete_alias' => ['alias_name' => 'old_alias']],
+            ],
+        ]);
+    });
+
+    it('builds body with multiple actions for atomic swap', function (): void {
+        $request = new AliasRequest([
+            ['delete' => ['alias_name' => 'memories']],
+            ['assign' => ['collection_name' => 'memories_v2', 'alias_name' => 'memories']],
+        ]);
+        $body = invade($request)->defaultBody();
+
+        expect($body)->toBe([
+            'actions' => [
+                ['delete_alias' => ['alias_name' => 'memories']],
+                ['create_alias' => ['collection_name' => 'memories_v2', 'alias_name' => 'memories']],
+            ],
+        ]);
     });
 });
