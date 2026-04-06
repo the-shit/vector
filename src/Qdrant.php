@@ -14,6 +14,7 @@ use TheShit\Vector\Requests\Collections\AliasRequest;
 use TheShit\Vector\Requests\Collections\CreateCollectionRequest;
 use TheShit\Vector\Requests\Collections\DeleteCollectionRequest;
 use TheShit\Vector\Requests\Collections\GetCollectionRequest;
+use TheShit\Vector\Requests\Collections\ListCollectionsRequest;
 use TheShit\Vector\Requests\Points\CountPointsRequest;
 use TheShit\Vector\Requests\Points\CreatePayloadIndexRequest;
 use TheShit\Vector\Requests\Points\DeletePayloadIndexRequest;
@@ -69,6 +70,20 @@ class Qdrant implements VectorClient
         $response->throw();
 
         return CollectionInfo::fromArray($response->json('result'));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function listCollections(): array
+    {
+        $response = $this->connector->send(new ListCollectionsRequest);
+        $response->throw();
+
+        return array_values(array_map(
+            fn (array $c): string => $c['name'],
+            $response->json('result.collections') ?? [],
+        ));
     }
 
     /**
