@@ -167,6 +167,23 @@ class Qdrant implements VectorClient
         return UpsertResult::fromArray($response->json('result'));
     }
 
+    /**
+     * @param  callable(ScrollResult): void  $callback
+     * @param  array<string, mixed>|null  $filter
+     */
+    public function scrollAll(string $collection, callable $callback, int $chunkSize = 100, ?array $filter = null): void
+    {
+        $offset = null;
+
+        do {
+            $result = $this->scroll($collection, $chunkSize, $filter, $offset);
+
+            $callback($result);
+
+            $offset = $result->nextOffset;
+        } while ($result->hasMore());
+    }
+
     public function connector(): QdrantConnector
     {
         return $this->connector;

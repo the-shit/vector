@@ -310,6 +310,125 @@ describe('Qdrant::scroll', function (): void {
     });
 });
 
+describe('Qdrant::scrollAll', function (): void {
+    it('iterates through all pages and invokes callback per chunk', function (): void {
+        $mock = new MockClient([
+            MockResponse::make([
+                'result' => [
+                    'points' => [
+                        ['id' => 1, 'payload' => ['name' => 'one']],
+                        ['id' => 2, 'payload' => ['name' => 'two']],
+                    ],
+                    'next_page_offset' => 3,
+                ],
+                'status' => 'ok',
+            ]),
+            MockResponse::make([
+                'result' => [
+                    'points' => [
+                        ['id' => 3, 'payload' => ['name' => 'three']],
+                    ],
+                    'next_page_offset' => null,
+                ],
+                'status' => 'ok',
+            ]),
+        ]);
+
+        $collected = [];
+        makeClient($mock)->scrollAll('coll', function (ScrollResult $result) use (&$collected): void {
+            foreach ($result->points as $point) {
+                $collected[] = $point->id;
+            }
+        }, chunkSize: 2);
+
+        expect($collected)->toBe([1, 2, 3]);
+        $mock->assertSentCount(2);
+    });
+
+    it('handles a single page with no more results', function (): void {
+        $mock = new MockClient([
+            ScrollPointsRequest::class => MockResponse::make([
+                'result' => [
+                    'points' => [
+                        ['id' => 1, 'payload' => ['name' => 'only']],
+                    ],
+                    'next_page_offset' => null,
+                ],
+                'status' => 'ok',
+            ]),
+        ]);
+
+        $count = 0;
+        makeClient($mock)->scrollAll('coll', function (ScrollResult $result) use (&$count): void {
+            $count += count($result->points);
+        });
+
+        expect($count)->toBe(1);
+        $mock->assertSentCount(1);
+    });
+
+    it('handles empty collection', function (): void {
+        $mock = new MockClient([
+            ScrollPointsRequest::class => MockResponse::make([
+                'result' => [
+                    'points' => [],
+                    'next_page_offset' => null,
+                ],
+                'status' => 'ok',
+            ]),
+        ]);
+
+        $called = false;
+        makeClient($mock)->scrollAll('coll', function () use (&$called): void {
+            $called = true;
+        });
+
+        expect($called)->toBeTrue();
+        $mock->assertSentCount(1);
+    });
+
+    it('passes filter to underlying scroll requests', function (): void {
+        $mock = new MockClient([
+            ScrollPointsRequest::class => MockResponse::make([
+                'result' => [
+                    'points' => [],
+                    'next_page_offset' => null,
+                ],
+                'status' => 'ok',
+            ]),
+        ]);
+
+        $filter = ['must' => [['key' => 'type', 'match' => ['value' => 'track']]]];
+        makeClient($mock)->scrollAll('coll', function (): void {}, filter: $filter);
+
+        $mock->assertSent(function (ScrollPointsRequest $request) use ($filter): bool {
+            $body = invade($request)->defaultBody();
+
+            return $body['filter'] === $filter;
+        });
+    });
+
+    it('passes chunkSize as limit to scroll requests', function (): void {
+        $mock = new MockClient([
+            ScrollPointsRequest::class => MockResponse::make([
+                'result' => [
+                    'points' => [],
+                    'next_page_offset' => null,
+                ],
+                'status' => 'ok',
+            ]),
+        ]);
+
+        makeClient($mock)->scrollAll('coll', function (): void {}, chunkSize: 50);
+
+        $mock->assertSent(function (ScrollPointsRequest $request): bool {
+            $body = invade($request)->defaultBody();
+
+            return $body['limit'] === 50;
+        });
+    });
+});
+
 describe('Qdrant::delete', function (): void {
     it('deletes by ids', function (): void {
         $mock = new MockClient([
