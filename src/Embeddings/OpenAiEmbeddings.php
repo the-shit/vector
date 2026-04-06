@@ -54,7 +54,7 @@ class OpenAiEmbeddings implements EmbeddingClient
 
         return array_map(
             fn (mixed $item): array => is_array($item) && isset($item['embedding']) && is_array($item['embedding'])
-                ? array_map(fn (mixed $v): float => (float) $v, $item['embedding'])
+                ? array_map(fn (mixed $v): float => $v, $item['embedding'])
                 : [],
             $data,
         );

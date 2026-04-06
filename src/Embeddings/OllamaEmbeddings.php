@@ -53,7 +53,7 @@ class OllamaEmbeddings implements EmbeddingClient
 
         return array_map(
             fn (mixed $embedding): array => is_array($embedding)
-                ? array_map(fn (mixed $v): float => (float) $v, $embedding)
+                ? array_map(fn (mixed $v): float => $v, $embedding)
                 : [],
             $embeddings,
         );
