@@ -7,16 +7,20 @@ namespace TheShit\Vector\Embeddings;
 use Saloon\Exceptions\Request\RequestException;
 use TheShit\Vector\Contracts\EmbeddingClient;
 use TheShit\Vector\Embeddings\Requests\OllamaEmbedRequest;
+use TheShit\Vector\Exceptions\EmbeddingRequestException;
 
 class OllamaEmbeddings implements EmbeddingClient
 {
     public function __construct(
         protected readonly OllamaConnector $connector,
         protected readonly string $model = 'bge-large',
+        protected readonly bool $sanitize = true,
     ) {}
 
     /**
      * @return array<float>
+     *
+     * @throws EmbeddingRequestException
      */
     public function embed(string $text): array
     {
@@ -32,9 +36,15 @@ class OllamaEmbeddings implements EmbeddingClient
     /**
      * @param  array<string>  $texts
      * @return array<array<float>>
+     *
+     * @throws EmbeddingRequestException
      */
     public function embedBatch(array $texts): array
     {
+        if ($this->sanitize) {
+            $texts = array_map(EmbeddingTextSanitizer::sanitize(...), $texts);
+        }
+
         $texts = array_values(array_filter($texts, fn (string $t): bool => trim($t) !== ''));
 
         if ($texts === []) {
@@ -44,8 +54,8 @@ class OllamaEmbeddings implements EmbeddingClient
         try {
             $response = $this->connector->send(new OllamaEmbedRequest($this->model, $texts));
             $response->throw();
-        } catch (RequestException) {
-            return array_fill(0, count($texts), []);
+        } catch (RequestException $exception) {
+            throw EmbeddingRequestException::fromSaloon($this->model, $exception);
         }
 
         /** @var array<array<float>> $embeddings */
