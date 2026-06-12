@@ -13,6 +13,7 @@ use TheShit\Vector\Embeddings\OpenAiConnector;
 use TheShit\Vector\Embeddings\OpenAiEmbeddings;
 use TheShit\Vector\Embeddings\Requests\OllamaEmbedRequest;
 use TheShit\Vector\Embeddings\Requests\OpenAiEmbedRequest;
+use TheShit\Vector\Exceptions\EmbeddingRequestException;
 
 describe('OllamaConnector', function (): void {
     it('resolves base url', function (): void {
@@ -155,16 +156,75 @@ describe('OllamaEmbeddings', function (): void {
         expect($client->embedBatch(['', '  ']))->toBe([]);
     });
 
-    it('returns empty arrays on request failure', function (): void {
+    it('throws descriptive exception on request failure', function (): void {
         $connector = new OllamaConnector('http://localhost:11434');
         $connector->withMockClient(new MockClient([
-            OllamaEmbedRequest::class => MockResponse::make([], 500),
+            OllamaEmbedRequest::class => MockResponse::make([
+                'error' => 'the input length exceeds the context length',
+            ], 400),
         ]));
 
         $client = new OllamaEmbeddings($connector, 'bge-large');
-        $result = $client->embed('hello');
 
-        expect($result)->toBe([]);
+        $client->embed('hello');
+    })->throws(
+        EmbeddingRequestException::class,
+        'Embedding request failed for model [bge-large] (HTTP 400): the input length exceeds the context length',
+    );
+
+    it('falls back to raw body when error response is not json', function (): void {
+        $connector = new OllamaConnector('http://localhost:11434');
+        $connector->withMockClient(new MockClient([
+            OllamaEmbedRequest::class => MockResponse::make('upstream unavailable', 502),
+        ]));
+
+        $client = new OllamaEmbeddings($connector, 'bge-large');
+
+        $client->embed('hello');
+    })->throws(
+        EmbeddingRequestException::class,
+        'Embedding request failed for model [bge-large] (HTTP 502): upstream unavailable',
+    );
+
+    it('sanitizes text before embedding by default', function (): void {
+        $connector = new OllamaConnector('http://localhost:11434');
+        $mockClient = new MockClient([
+            OllamaEmbedRequest::class => MockResponse::make([
+                'embeddings' => [[0.1, 0.2]],
+            ]),
+        ]);
+        $connector->withMockClient($mockClient);
+
+        $client = new OllamaEmbeddings($connector, 'bge-large');
+        $client->embed("hello \u{1F692} world");
+
+        $mockClient->assertSent(
+            fn ($request): bool => $request->body()->all()['input'] === ['hello world'],
+        );
+    });
+
+    it('filters texts that sanitize to empty strings', function (): void {
+        $connector = new OllamaConnector('http://localhost:11434');
+        $client = new OllamaEmbeddings($connector, 'bge-large');
+
+        expect($client->embedBatch(["\u{1F4A9}", "\u{2705}\u{2728}"]))->toBe([]);
+    });
+
+    it('skips sanitization when disabled', function (): void {
+        $connector = new OllamaConnector('http://localhost:11434');
+        $mockClient = new MockClient([
+            OllamaEmbedRequest::class => MockResponse::make([
+                'embeddings' => [[0.1, 0.2]],
+            ]),
+        ]);
+        $connector->withMockClient($mockClient);
+
+        $client = new OllamaEmbeddings($connector, 'bge-large', sanitize: false);
+        $client->embed("hello \u{1F692} world");
+
+        $mockClient->assertSent(
+            fn ($request): bool => $request->body()->all()['input'] === ["hello \u{1F692} world"],
+        );
     });
 
     it('handles malformed embedding response', function (): void {
@@ -262,16 +322,54 @@ describe('OpenAiEmbeddings', function (): void {
         expect($client->embedBatch(['', '  ']))->toBe([]);
     });
 
-    it('returns empty arrays on request failure', function (): void {
+    it('throws descriptive exception on request failure', function (): void {
         $connector = new OpenAiConnector('https://api.openai.com', 'sk-test');
         $connector->withMockClient(new MockClient([
-            OpenAiEmbedRequest::class => MockResponse::make([], 500),
+            OpenAiEmbedRequest::class => MockResponse::make([
+                'error' => ['message' => 'Rate limit reached for requests'],
+            ], 429),
         ]));
 
         $client = new OpenAiEmbeddings($connector, 'text-embedding-3-large');
-        $result = $client->embed('hello');
 
-        expect($result)->toBe([]);
+        $client->embed('hello');
+    })->throws(
+        EmbeddingRequestException::class,
+        'Embedding request failed for model [text-embedding-3-large] (HTTP 429): Rate limit reached for requests',
+    );
+
+    it('does not sanitize by default', function (): void {
+        $connector = new OpenAiConnector('https://api.openai.com', 'sk-test');
+        $mockClient = new MockClient([
+            OpenAiEmbedRequest::class => MockResponse::make([
+                'data' => [['embedding' => [0.1]]],
+            ]),
+        ]);
+        $connector->withMockClient($mockClient);
+
+        $client = new OpenAiEmbeddings($connector, 'text-embedding-3-large');
+        $client->embed("hello \u{1F692} world");
+
+        $mockClient->assertSent(
+            fn ($request): bool => $request->body()->all()['input'] === ["hello \u{1F692} world"],
+        );
+    });
+
+    it('sanitizes when enabled', function (): void {
+        $connector = new OpenAiConnector('https://api.openai.com', 'sk-test');
+        $mockClient = new MockClient([
+            OpenAiEmbedRequest::class => MockResponse::make([
+                'data' => [['embedding' => [0.1]]],
+            ]),
+        ]);
+        $connector->withMockClient($mockClient);
+
+        $client = new OpenAiEmbeddings($connector, 'text-embedding-3-large', sanitize: true);
+        $client->embed("hello \u{1F692} world");
+
+        $mockClient->assertSent(
+            fn ($request): bool => $request->body()->all()['input'] === ['hello world'],
+        );
     });
 
     it('handles malformed data response', function (): void {

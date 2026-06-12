@@ -7,6 +7,7 @@ namespace TheShit\Vector\Embeddings;
 use Saloon\Exceptions\Request\RequestException;
 use TheShit\Vector\Contracts\EmbeddingClient;
 use TheShit\Vector\Embeddings\Requests\OpenAiEmbedRequest;
+use TheShit\Vector\Exceptions\EmbeddingRequestException;
 
 class OpenAiEmbeddings implements EmbeddingClient
 {
@@ -14,10 +15,13 @@ class OpenAiEmbeddings implements EmbeddingClient
         protected readonly OpenAiConnector $connector,
         protected readonly string $model = 'text-embedding-3-large',
         protected readonly ?int $dimensions = null,
+        protected readonly bool $sanitize = false,
     ) {}
 
     /**
      * @return array<float>
+     *
+     * @throws EmbeddingRequestException
      */
     public function embed(string $text): array
     {
@@ -33,9 +37,15 @@ class OpenAiEmbeddings implements EmbeddingClient
     /**
      * @param  array<string>  $texts
      * @return array<array<float>>
+     *
+     * @throws EmbeddingRequestException
      */
     public function embedBatch(array $texts): array
     {
+        if ($this->sanitize) {
+            $texts = array_map(EmbeddingTextSanitizer::sanitize(...), $texts);
+        }
+
         $texts = array_values(array_filter($texts, fn (string $t): bool => trim($t) !== ''));
 
         if ($texts === []) {
@@ -45,8 +55,8 @@ class OpenAiEmbeddings implements EmbeddingClient
         try {
             $response = $this->connector->send(new OpenAiEmbedRequest($this->model, $texts, $this->dimensions));
             $response->throw();
-        } catch (RequestException) {
-            return array_fill(0, count($texts), []);
+        } catch (RequestException $exception) {
+            throw EmbeddingRequestException::fromSaloon($this->model, $exception);
         }
 
         /** @var array<array{embedding: array<float>}> $data */
