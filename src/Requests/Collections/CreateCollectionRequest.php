@@ -21,7 +21,7 @@ class CreateCollectionRequest extends Request implements HasBody
      */
     public function __construct(
         protected readonly string $name,
-        protected readonly int $size = 1536,
+        protected readonly ?int $size = null,
         protected readonly string $distance = 'Cosine',
         protected readonly ?array $namedVectors = null,
         protected readonly ?array $sparseVectors = null,
@@ -40,6 +40,13 @@ class CreateCollectionRequest extends Request implements HasBody
         if ($this->namedVectors !== null) {
             $body = ['vectors' => $this->namedVectors];
         } else {
+            if ($this->size === null) {
+                throw new \InvalidArgumentException(
+                    'Collection vector size is required: pass $size or $namedVectors. '
+                    .'A silent default dimension would have to match your embedding model by luck.'
+                );
+            }
+
             $body = [
                 'vectors' => [
                     'size' => $this->size,
