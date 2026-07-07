@@ -398,11 +398,11 @@ describe('HybridSearchRequest', function (): void {
 describe('CreateCollectionRequest with sparse vectors', function (): void {
     it('includes sparse_vectors in body', function (): void {
         $sparse = ['sparse' => ['modifier' => 'idf']];
-        $request = new CreateCollectionRequest('test', sparseVectors: $sparse);
+        $request = new CreateCollectionRequest('test', size: 1024, sparseVectors: $sparse);
         $body = invade($request)->defaultBody();
 
         expect($body['sparse_vectors'])->toBe($sparse)
-            ->and($body['vectors'])->toBe(['size' => 1536, 'distance' => 'Cosine']);
+            ->and($body['vectors'])->toBe(['size' => 1024, 'distance' => 'Cosine']);
     });
 
     it('combines named vectors with sparse vectors', function (): void {
@@ -416,10 +416,17 @@ describe('CreateCollectionRequest with sparse vectors', function (): void {
     });
 
     it('omits sparse_vectors when null', function (): void {
-        $request = new CreateCollectionRequest('test');
+        $request = new CreateCollectionRequest('test', size: 1024);
         $body = invade($request)->defaultBody();
 
         expect($body)->not->toHaveKey('sparse_vectors');
+    });
+
+    it('throws when neither size nor named vectors are given', function (): void {
+        $request = new CreateCollectionRequest('test');
+
+        expect(fn () => invade($request)->defaultBody())
+            ->toThrow(InvalidArgumentException::class, 'Collection vector size is required');
     });
 });
 
