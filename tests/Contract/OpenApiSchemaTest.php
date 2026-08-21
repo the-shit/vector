@@ -38,13 +38,21 @@ function getRequestSchema(array $spec, string $method, string $path): ?array
     return isset($body['$ref']) ? resolveSchema($spec, $body['$ref']) : $body;
 }
 
-function specFields(array $schema): array
+function specFields(?array $schema): array
 {
+    if ($schema === null) {
+        return [];
+    }
+
     return array_keys($schema['properties'] ?? []);
 }
 
-function specRequired(array $schema): array
+function specRequired(?array $schema): array
 {
+    if ($schema === null) {
+        return [];
+    }
+
     return $schema['required'] ?? [];
 }
 
@@ -55,18 +63,16 @@ describe('Contract: Request bodies match Qdrant OpenAPI spec', function (): void
         expect(specFields($schema))->toContain('vectors');
     });
 
-    it('SearchRequest has required vector and limit', function (): void {
-        $schema = getRequestSchema(loadSpec(), 'post', '/collections/{collection_name}/points/search');
+    it('nearest-neighbor search lives on QueryRequest after /points/search retired', function (): void {
+        $schema = getRequestSchema(loadSpec(), 'post', '/collections/{collection_name}/points/query');
         $fields = specFields($schema);
-        $required = specRequired($schema);
 
-        expect($fields)->toContain('vector')
+        expect($schema)->not->toBeNull()
+            ->and($fields)->toContain('query')
             ->and($fields)->toContain('limit')
             ->and($fields)->toContain('filter')
             ->and($fields)->toContain('with_payload')
-            ->and($fields)->toContain('with_vector')
-            ->and($required)->toContain('vector')
-            ->and($required)->toContain('limit');
+            ->and($fields)->toContain('with_vector');
     });
 
     it('ScrollRequest accepts our fields', function (): void {
@@ -176,13 +182,12 @@ describe('Contract: Endpoints exist in Qdrant spec', function (): void {
 
         expect($paths)->toContain('/collections/{collection_name}')
             ->and($paths)->toContain('/collections/{collection_name}/points')
-            ->and($paths)->toContain('/collections/{collection_name}/points/search')
+            ->and($paths)->toContain('/collections/{collection_name}/points/query')
             ->and($paths)->toContain('/collections/{collection_name}/points/scroll')
             ->and($paths)->toContain('/collections/{collection_name}/points/delete')
             ->and($paths)->toContain('/collections/{collection_name}/points/count')
             ->and($paths)->toContain('/collections/{collection_name}/points/payload')
             ->and($paths)->toContain('/collections/{collection_name}/index')
-            ->and($paths)->toContain('/collections/{collection_name}/points/query')
             ->and($paths)->toContain('/collections/aliases');
     });
 
@@ -194,14 +199,13 @@ describe('Contract: Endpoints exist in Qdrant spec', function (): void {
             ->and($spec['paths']['/collections/{collection_name}'])->toHaveKey('delete')
             ->and($spec['paths']['/collections/{collection_name}/points'])->toHaveKey('put')
             ->and($spec['paths']['/collections/{collection_name}/points'])->toHaveKey('post')
-            ->and($spec['paths']['/collections/{collection_name}/points/search'])->toHaveKey('post')
+            ->and($spec['paths']['/collections/{collection_name}/points/query'])->toHaveKey('post')
             ->and($spec['paths']['/collections/{collection_name}/points/scroll'])->toHaveKey('post')
             ->and($spec['paths']['/collections/{collection_name}/points/delete'])->toHaveKey('post')
             ->and($spec['paths']['/collections/{collection_name}/points/count'])->toHaveKey('post')
             ->and($spec['paths']['/collections/{collection_name}/points/payload'])->toHaveKey('post')
             ->and($spec['paths']['/collections/{collection_name}/index'])->toHaveKey('put')
             ->and($spec['paths']['/collections/{collection_name}/index/{field_name}'])->toHaveKey('delete')
-            ->and($spec['paths']['/collections/{collection_name}/points/query'])->toHaveKey('post')
             ->and($spec['paths']['/collections/aliases'])->toHaveKey('post');
     });
 });
